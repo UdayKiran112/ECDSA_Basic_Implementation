@@ -25,36 +25,36 @@ void generate_seed(octet &RAW, unsigned long seed)
 
 int ecdsa_sign_verify(csprng *RNG)
 {
-
     char priv[2 * EGS_SECP256K1], pub[2 * EFS_SECP256K1 + 1];
 
     octet privKey = {0, size(priv), priv};
     octet pubKey = {0, size(pub), pub};
 
+    cout << "\n========= Key Generation =========\n";
+
     // Generate Key Pair
     if (ECP_KEY_PAIR_GENERATE(RNG, &privKey, &pubKey) != 0)
     {
-        cout << "Key pair not generated" << endl;
-        ;
+        cout << "Error: Key pair generation failed.\n";
         return 0;
     }
 
-    // print private and public Key
-    cout << "Private Key : ";
+    // Print Private and Public Key
+    cout << "Private Key: ";
     OCT_output(&privKey);
-    cout << endl;
-
-    cout << "Public Key : ";
+    cout << "\nPublic Key: ";
     OCT_output(&pubKey);
-    cout << endl;
+    cout << "\n";
 
     // Validate Public Key
     int res = ECP_PUBLIC_KEY_VALIDATE(&pubKey);
     if (res != 0)
     {
-        cout << "Invalid Public Key" << endl;
+        cout << "Error: Invalid Public Key.\n";
         return -1;
     }
+
+    cout << "Public key validation: Success.\n";
 
     // Message to sign
     string msg = "Hello World!";
@@ -64,20 +64,24 @@ int ecdsa_sign_verify(csprng *RNG)
     Message.val = new char[msg.size()];
     memcpy(Message.val, msg.c_str(), msg.size());
 
-    // Print Message
-    cout << "Message in hex : ";
-    OCT_output(&Message);
-    cout << endl;
+    cout << "\n========= Message Processing =========\n";
+    cout << "Message: \"" << msg << "\"\n";
 
+    // Print Message in Hex
+    cout << "Message (Hex): ";
+    OCT_output(&Message);
+    cout << "\n";
+
+    // Hash the message
     char h[32];
     octet hashed_message = {0, size(h), h};
-    cout << hashed_message.len << endl;
-
     SPhash(MC_SHA2, 32, &hashed_message, &Message);
 
-    cout << "Hash of the message is :";
+    cout << "Hashed Message (SHA-256): ";
     OCT_output(&hashed_message);
-    cout << endl;
+    cout << "\n";
+
+    cout << "\n========= Signing =========\n";
 
     // Sign the message
     char cs[EGS_SECP256K1], ds[EGS_SECP256K1];
@@ -86,24 +90,27 @@ int ecdsa_sign_verify(csprng *RNG)
 
     if (ECP_SP_DSA(32, RNG, nullptr, &privKey, &Message, &CS, &DS) != 0)
     {
-        cout << "Signature failed" << endl;
+        cout << "Error: Signing failed.\n";
         return -1;
     }
 
     // Display the signature
-    cout << "Signature C: ";
+    cout << "Signature:\n  C: ";
     OCT_output(&CS);
-    cout << "\nSignature D: ";
+    cout << "\n  D: ";
     OCT_output(&DS);
-    cout << endl;
+    cout << "\n";
+
+    cout << "\n========= Verification =========\n";
 
     // Verify the signature
     if (ECP_VP_DSA(32, &pubKey, &Message, &CS, &DS) != 0)
     {
-        cout << "Verification failed" << endl;
+        cout << "Error: Signature verification failed.\n";
         return -1;
     }
-    cout << "Signature verified successfully!" << endl;
+
+    cout << "Signature verification: Success.\n";
     return 0;
 }
 
@@ -120,14 +127,20 @@ int main()
     core::CREATE_CSPRNG(&RNG, &RAW);
 
     // Sign and verify using ECDSA
+    cout << "\n========== ECDSA Operation ==========\n";
     if (ecdsa_sign_verify(&RNG) != 0)
     {
-        cout << "ECDSA operation failed." << endl;
+        cout << "ECDSA operation encountered errors.\n";
+    }
+    else
+    {
+        cout << "ECDSA operation completed successfully.\n";
     }
 
     // Clean up
     core::KILL_CSPRNG(&RNG);
     delete[] RAW.val;
 
+    cout << "\n======================================\n";
     return 0;
 }

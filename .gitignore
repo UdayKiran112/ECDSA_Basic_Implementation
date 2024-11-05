@@ -3,3 +3,4 @@ main
 .vscode/launch.json
 .vscode/settings.json
 obj/main.o
+Lib/core.a
